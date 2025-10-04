@@ -1,26 +1,68 @@
 package algorithms;
 
 import metrics.PerformanceTracker;
+import java.util.Arrays;
 
 /**
- * Enhanced Kadane's Algorithm with comprehensive performance tracking
+ * Implementation of Kadane's Algorithm for finding the maximum subarray sum
+ * with position tracking and comprehensive performance metrics.
+ *
+ * Time Complexity: O(n)
+ * Space Complexity: O(1)
+ *
+ * @author Student B
  */
 public class KadaneAlgorithm {
     private final PerformanceTracker tracker;
+
+    /**
+     * Result class to store maximum subarray information
+     */
+    public static class MaximumSubarrayResult {
+        private final int maxSum;
+        private final int startIndex;
+        private final int endIndex;
+
+        public MaximumSubarrayResult(int maxSum, int startIndex, int endIndex) {
+            this.maxSum = maxSum;
+            this.startIndex = startIndex;
+            this.endIndex = endIndex;
+        }
+
+        // Getters
+        public int getMaxSum() { return maxSum; }
+        public int getStartIndex() { return startIndex; }
+        public int getEndIndex() { return endIndex; }
+
+        /**
+         * Returns the actual subarray (computed on demand)
+         */
+        public int[] getSubarray(int[] originalArray) {
+            if (originalArray == null) {
+                return null;
+            }
+            return Arrays.copyOfRange(originalArray, startIndex, endIndex + 1);
+        }
+
+        @Override
+        public String toString() {
+            return String.format("Max Sum: %d, Range: [%d, %d]", maxSum, startIndex, endIndex);
+        }
+    }
 
     public KadaneAlgorithm() {
         this.tracker = new PerformanceTracker("KadaneAlgorithm");
     }
 
     /**
-     * Finds maximum subarray sum with full performance tracking
+     * Finds the maximum sum of a contiguous subarray using Kadane's Algorithm
      */
     public MaximumSubarrayResult findMaximumSubarray(int[] nums) {
         tracker.reset();
-        tracker.setInputSize(nums.length);
+        tracker.setInputSize(nums != null ? nums.length : 0);
         tracker.setInputType("standard");
         tracker.startTimer();
-        tracker.incrementMemoryAllocation(1); // For result object
+        tracker.incrementMemoryAllocation(); // Fixed: no argument
 
         // Input validation
         if (nums == null) {
@@ -30,11 +72,11 @@ public class KadaneAlgorithm {
             throw new IllegalArgumentException("Input array cannot be empty");
         }
 
-        tracker.incrementArrayAccess(1); // Access nums.length
+        tracker.incrementArrayAccess(); // Fixed: no argument
 
         // Handle single element case
         if (nums.length == 1) {
-            tracker.incrementArrayAccess(1);
+            tracker.incrementArrayAccess(); // Fixed: no argument
             tracker.stopTimer();
             tracker.recordRun();
             return new MaximumSubarrayResult(nums[0], 0, 0);
@@ -46,21 +88,21 @@ public class KadaneAlgorithm {
         int end = 0;
         int tempStart = 0;
 
-        tracker.incrementArrayAccess(2); // First two element accesses
-        tracker.incrementComparison(1); // Initial setup comparison
+        tracker.incrementArrayAccesses(2); // Two element accesses
+        tracker.incrementComparison(); // Initial setup comparison
 
         for (int i = 1; i < nums.length; i++) {
-            tracker.incrementComparison(1); // Loop condition check
-            tracker.incrementArrayAccess(1); // Access nums[i]
+            tracker.incrementComparison(); // Loop condition check
+            tracker.incrementArrayAccess(); // Access nums[i]
 
             // Decide whether to extend previous subarray or start new one
             if (nums[i] > maxEndingHere + nums[i]) {
                 maxEndingHere = nums[i];
                 tempStart = i;
-                tracker.incrementComparison(1);
+                tracker.incrementComparison();
             } else {
                 maxEndingHere = maxEndingHere + nums[i];
-                tracker.incrementComparison(1);
+                tracker.incrementComparison();
             }
 
             // Update maximum sum found so far
@@ -68,10 +110,88 @@ public class KadaneAlgorithm {
                 maxSoFar = maxEndingHere;
                 start = tempStart;
                 end = i;
-                tracker.incrementComparison(1);
+                tracker.incrementComparison();
             }
 
-            tracker.incrementComparison(1); // Final if comparison
+            tracker.incrementComparison(); // Final if comparison
+        }
+
+        tracker.stopTimer();
+        tracker.recordRun();
+        return new MaximumSubarrayResult(maxSoFar, start, end);
+    }
+
+    /**
+     * Optimized version that handles all negative numbers case more explicitly
+     */
+    public MaximumSubarrayResult findMaximumSubarrayOptimized(int[] nums) {
+        tracker.reset();
+        tracker.setInputSize(nums != null ? nums.length : 0);
+        tracker.setInputType("optimized");
+        tracker.startTimer();
+        tracker.incrementMemoryAllocation(); // Fixed: no argument
+
+        if (nums == null || nums.length == 0) {
+            throw new IllegalArgumentException("Input array cannot be null or empty");
+        }
+
+        tracker.incrementArrayAccess(); // Fixed: no argument
+
+        // Single element case
+        if (nums.length == 1) {
+            tracker.incrementArrayAccess(); // Fixed: no argument
+            tracker.stopTimer();
+            tracker.recordRun();
+            return new MaximumSubarrayResult(nums[0], 0, 0);
+        }
+
+        int maxSoFar = nums[0];
+        int maxEndingHere = nums[0];
+        int start = 0, end = 0, tempStart = 0;
+
+        tracker.incrementArrayAccesses(2);
+        tracker.incrementComparison();
+
+        boolean allNegative = nums[0] < 0;
+        int maxSingleElement = nums[0];
+        int maxSingleIndex = 0;
+
+        for (int i = 1; i < nums.length; i++) {
+            tracker.incrementComparison();
+            tracker.incrementArrayAccess();
+
+            // Check if all elements are negative
+            if (nums[i] >= 0) allNegative = false;
+
+            // Track maximum single element for all-negative case
+            if (nums[i] > maxSingleElement) {
+                maxSingleElement = nums[i];
+                maxSingleIndex = i;
+                tracker.incrementComparison();
+            }
+
+            // Standard Kadane's algorithm logic
+            if (maxEndingHere < 0) {
+                maxEndingHere = nums[i];
+                tempStart = i;
+            } else {
+                maxEndingHere += nums[i];
+            }
+
+            if (maxEndingHere > maxSoFar) {
+                maxSoFar = maxEndingHere;
+                start = tempStart;
+                end = i;
+            }
+
+            tracker.incrementComparisons(2);
+        }
+
+        // If all numbers are negative, return the maximum single element
+        if (allNegative && maxSoFar < 0) {
+            tracker.stopTimer();
+            tracker.recordRun();
+            return new MaximumSubarrayResult(maxSingleElement, maxSingleIndex, maxSingleIndex);
         }
 
         tracker.stopTimer();
@@ -93,8 +213,9 @@ public class KadaneAlgorithm {
         }
     }
 
-    // ... (rest of KadaneAlgorithm class remains the same)
-
+    /**
+     * Returns the performance metrics for analysis
+     */
     public PerformanceTracker getPerformanceTracker() {
         return tracker;
     }

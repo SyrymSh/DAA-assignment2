@@ -92,8 +92,19 @@ public class PerformanceTracker {
 
         runHistory.add(runData);
 
-        // Reset for next run
-        reset();
+        // Reset for next run (but keep run history)
+        resetCounters();
+    }
+
+    /**
+     * Reset only the counters, not the entire state
+     */
+    private void resetCounters() {
+        comparisons = 0;
+        arrayAccesses = 0;
+        memoryAllocations = 0;
+        startTime = 0;
+        endTime = 0;
     }
 
     /**
